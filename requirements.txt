@@ -1,0 +1,10 @@
+#requirements
+
+streamlit
+pandas
+folium
+streamlit-folium
+matplotlib
+seaborn
+plotly
+pymongo
