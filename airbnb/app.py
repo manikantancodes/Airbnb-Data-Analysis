@@ -14,9 +14,8 @@ db = client.sample_airbnb
 collection = db.listingsAndReviews
 
 # Load data from MongoDB
-# Uncomment below line if you want to fetch data directly from MongoDB
-# data = pd.DataFrame(list(collection.find()))
-
+#After Data Cleaning Process
+#Save the CSV file
 # For now, we'll use the CSV file
 data = pd.read_csv(r"C:\Users\manik\Desktop\Air bnb Analysis\cleaned_airbnb_listings.csv")
 
@@ -26,11 +25,16 @@ st.title("Airbnb Data Visualization")
 # Sidebar for filters
 st.sidebar.header("Filters")
 
-# Country filter
-country_filter = st.sidebar.selectbox("Select Country", data["country"].unique())
+# Add "All" option to country filter
+countries = ["All"] + list(data["country"].unique())
+country_filter = st.sidebar.selectbox("Select Country", countries)
 
-# City filter
-city_filter = st.sidebar.selectbox("Select City", data[data["country"] == country_filter]["suburb"].unique())
+# Filter cities based on selected country and add "All" option
+if country_filter == "All":
+    cities = ["All"] + list(data["suburb"].unique())
+else:
+    cities = ["All"] + list(data[data["country"] == country_filter]["suburb"].unique())
+city_filter = st.sidebar.selectbox("Select City", cities)
 
 # Property type filter
 property_type_filter = st.sidebar.multiselect("Select Property Type", data["property_type"].unique())
@@ -46,12 +50,16 @@ room_type_filter = st.sidebar.selectbox("Room Type", data['room_type'].unique())
 
 # Filter data based on sidebar selections
 filtered_data = data[
-    (data["country"] == country_filter) &
-    (data["suburb"] == city_filter) &
     (data["price"].between(price_range[0], price_range[1])) &
     (data["review_scores_rating"].between(rating_range[0], rating_range[1])) &
     (data["room_type"] == room_type_filter)
 ]
+
+if country_filter != "All":
+    filtered_data = filtered_data[filtered_data["country"] == country_filter]
+
+if city_filter != "All":
+    filtered_data = filtered_data[filtered_data["suburb"] == city_filter]
 
 if property_type_filter:
     filtered_data = filtered_data[filtered_data["property_type"].isin(property_type_filter)]
@@ -75,6 +83,13 @@ if not filtered_data.empty:
         ).add_to(m)
 
     folium_static(m)
+    st.write(f"This map shows the geographical distribution of listings filtered by:")
+    st.write(f"- **Country**: {country_filter if country_filter != 'All' else 'All Countries'}")
+    st.write(f"- **City**: {city_filter if city_filter != 'All' else 'All Cities'}")
+    st.write(f"- **Property Type**: {property_type_filter if property_type_filter else 'All Types'}")
+    st.write(f"- **Price Range**: {price_range[0]} to {price_range[1]}")
+    st.write(f"- **Rating Range**: {rating_range[0]} to {rating_range[1]}")
+    st.write(f"- **Room Type**: {room_type_filter}")
 
     # Price visualization
     st.subheader("Price Distribution")
@@ -82,12 +97,22 @@ if not filtered_data.empty:
     sns.histplot(data=filtered_data, x="price", bins=20, ax=ax)
     plt.title("Price Distribution")
     st.pyplot(fig)
+    st.write(f"**Price Distribution Details**:")
+    st.write(f"- **Mean Price**: ${filtered_data['price'].mean():.2f}")
+    st.write(f"- **Median Price**: ${filtered_data['price'].median():.2f}")
+    st.write(f"- **Min Price**: ${filtered_data['price'].min():.2f}")
+    st.write(f"- **Max Price**: ${filtered_data['price'].max():.2f}")
 
     # Rating visualization
     st.subheader("Rating Distribution")
     fig = px.histogram(filtered_data, x="review_scores_rating", nbins=20)
     fig.update_layout(title="Rating Distribution")
     st.plotly_chart(fig)
+    st.write(f"**Rating Distribution Details**:")
+    st.write(f"- **Mean Rating**: {filtered_data['review_scores_rating'].mean():.2f}")
+    st.write(f"- **Median Rating**: {filtered_data['review_scores_rating'].median():.2f}")
+    st.write(f"- **Min Rating**: {filtered_data['review_scores_rating'].min():.2f}")
+    st.write(f"- **Max Rating**: {filtered_data['review_scores_rating'].max():.2f}")
 
     # Availability visualization
     st.subheader("Availability by Month")
@@ -96,6 +121,13 @@ if not filtered_data.empty:
     fig2 = px.box(availability_data, x='Availability Period', y='Days Available')
     fig2.update_layout(title="Availability by Period")
     st.plotly_chart(fig2)
+    st.write(f"**Availability Details**:")
+    for period in ['availability_30', 'availability_60', 'availability_90', 'availability_365']:
+        st.write(f"- **{period.replace('_', ' ')}**:")
+        st.write(f"  - Mean: {filtered_data[period].mean():.2f} days")
+        st.write(f"  - Median: {filtered_data[period].median():.2f} days")
+        st.write(f"  - Min: {filtered_data[period].min()} days")
+        st.write(f"  - Max: {filtered_data[period].max()} days")
 
     # Location-based insights
     st.subheader("Location-Based Insights")
@@ -128,6 +160,7 @@ if not filtered_data.empty:
     )
 
     st.plotly_chart(fig, use_container_width=True)
+    st.write(f"This interactive map visualizes the average ratings and availability by location. Larger markers indicate higher availability. The color gradient represents the average rating, with darker colors indicating higher ratings.")
 
     # Interactive visualizations
     st.subheader("Interactive Visualizations")
@@ -136,10 +169,27 @@ if not filtered_data.empty:
     fig = px.box(filtered_data, x="property_type", y="price", color="property_type")
     fig.update_layout(title="Price Distribution by Property Type")
     st.plotly_chart(fig, use_container_width=True)
+    st.write("**Price Distribution by Property Type**:")
+    for property_type in filtered_data["property_type"].unique():
+        subset = filtered_data[filtered_data["property_type"] == property_type]
+        st.write(f"- **{property_type}**:")
+        st.write(f"  - Mean Price: ${subset['price'].mean():.2f}")
+        st.write(f"  - Median Price: ${subset['price'].median():.2f}")
+        st.write(f"  - Min Price: ${subset['price'].min():.2f}")
+        st.write(f"  - Max Price: ${subset['price'].max():.2f}")
 
     # Rating distribution by location
     fig = px.violin(filtered_data, x="suburb", y="review_scores_rating", color="suburb")
     fig.update_layout(title="Rating Distribution by Location")
     st.plotly_chart(fig, use_container_width=True)
+    st.write("**Rating Distribution by Location**:")
+    for suburb in filtered_data["suburb"].unique():
+        subset = filtered_data[filtered_data["suburb"] == suburb]
+        st.write(f"- **{suburb}**:")
+        st.write(f"  - Mean Rating: {subset['review_scores_rating'].mean():.2f}")
+        st.write(f"  - Median Rating: {subset['review_scores_rating'].median():.2f}")
+        st.write(f"  - Min Rating: {subset['review_scores_rating'].min():.2f}")
+        st.write(f"  - Max Rating: {subset['review_scores_rating'].max():.2f}")
+
 else:
     st.write("No data available for the selected filters.")
