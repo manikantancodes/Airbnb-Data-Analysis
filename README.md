@@ -53,6 +53,18 @@ To run the analysis and visualization code:
 - Matplotlib
 - Seaborn
 
+## Airbnb Data Dashboard
+
+This Dashboard involves an in-depth analysis of Airbnb data using Power BI. The analysis focuses on key metrics such as host response rate, price, and reviews, providing valuable insights into the factors that influence Airbnb listings.
+
+### Power BI Dashboard
+
+You can view the Power BI dashboard [here](https://github.com/manikantancodes/Airbnb-Data-Analysis/blob/af93dad618d270bb7cd701a1e6a66f2c30f8d5b1/Airbnb%20Analysis%20.pbix).
+
+### Key Features:
+- **Host Response Rate vs. Price vs. Reviews**: Scatter plot visualizing the relationship between these metrics.
+- **Price Distribution**: Analysis of price variations across different regions.
+- **Review Analysis**: Insights into guest reviews and their impact on listing popularity.
 
 
 ## License
